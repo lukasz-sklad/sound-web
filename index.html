@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="color-scheme" content="dark">
+  <title>SoundCraft — Cyfrowa Stacja Robocza Audio DAW (Web)</title>
+  <link rel="icon" href="./ai.storyteller.soundcraft-4f86cc0f1d19c49f.png" integrity="sha384&#x2D;gGGdqNRRqqtc1O6hUsGr2t6crDCmPT5aQ88HrS63AGKTx8mtjcAwCaMFzW6yzgT0"/>
+  
+<script type="module">
+import init, * as bindings from './soundcraft-web-6d464cdb2664b5a1.js';
+const wasm = await init({ module_or_path: './soundcraft-web-6d464cdb2664b5a1_bg.wasm' });
+
+
+window.wasmBindings = bindings;
+
+
+dispatchEvent(new CustomEvent("TrunkApplicationStarted", {detail: {wasm}}));
+
+</script>
+  <meta name="description" content="SoundCraft: Otwartoźródłowa, profesjonalna stacja robocza audio (DAW) w przeglądarce (Rust + WebAssembly + WebGPU/WebGL2 + WebAudio).">
+  <style>
+    :root { color-scheme: dark; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #141416;
+      color: #e5e7eb;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    canvas#soundcraft_canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      outline: none;
+    }
+    #soundcraft_loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: #141416;
+      z-index: 50;
+      transition: opacity 220ms ease-out;
+    }
+    .brand-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      color: #ffffff;
+    }
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+      color: #ffffff;
+      font-size: 19px;
+      font-weight: 900;
+    }
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #10b981;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    .progress-box {
+      width: 280px;
+      max-width: 85vw;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .progress-bar {
+      width: 45%;
+      height: 100%;
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      animation: pulse 1.8s ease-in-out infinite alternate;
+    }
+    .status-msg {
+      font-size: 13px;
+      font-weight: 500;
+      color: #d1d5db;
+      text-align: center;
+      max-width: 480px;
+      line-height: 1.4;
+      padding: 0 16px;
+    }
+    .status-sub {
+      font-size: 11px;
+      color: #9ca3af;
+      font-variant-numeric: tabular-nums;
+    }
+    .features-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes pulse { from { width: 30%; } to { width: 85%; } }
+  </style>
+<link rel="modulepreload" href="./soundcraft-web-6d464cdb2664b5a1.js" crossorigin="anonymous" integrity="sha384-sTq6trNZqaDPbO2vPk7MqS0mH5ym2Id4A8JLo0Gk+J0d+eJxDdHXZXJ+3hy+2RcS"><link rel="preload" href="./soundcraft-web-6d464cdb2664b5a1_bg.wasm" crossorigin="anonymous" integrity="sha384-9/9AROzRCT1B3TUvKDXcomiwN6hNcRM/khZKRJrgGzbnnt4oKZF1fqIHOhsTY+IO" as="fetch" type="application/wasm"></head>
+<body>
+  <canvas id="soundcraft_canvas"></canvas>
+
+  <div id="soundcraft_loading">
+    <div class="brand-header">
+      <div class="brand-badge">🎚️</div>
+      <span>SoundCraft</span>
+    </div>
+    <div class="features-pill">
+      <span>PL</span>
+      <span>•</span>
+      <span>Ciemny motyw</span>
+      <span>•</span>
+      <span>WebGPU / WebGL2</span>
+      <span>•</span>
+      <span>WebAudio</span>
+    </div>
+    <div class="spinner"></div>
+    <div class="progress-box"><div class="progress-bar" id="loading_bar"></div></div>
+    <div class="status-msg" id="loading_msg">Inicjalizacja silnika SoundCraft…</div>
+    <div class="status-sub" id="loading_sub">Przygotowywanie WebAssembly i podsystemu audio…</div>
+  </div>
+
+  <script>
+    // cpal (wasm) builds the output stream at startup, before any user gesture, so the
+    // WebAudio AudioContext stays 'suspended': no audio is heard and the transport clock
+    // (driven by the audio callback) never advances. Capture the AudioContext cpal creates
+    // and resume it on the first user gesture. Runs before the wasm module is instantiated.
+    (function () {
+      var Orig = window.AudioContext || window.webkitAudioContext;
+      if (!Orig) return;
+      var ctxs = [];
+      function Wrapped(opts) { var c = new Orig(opts); ctxs.push(c); return c; }
+      Wrapped.prototype = Orig.prototype;
+      window.AudioContext = Wrapped;
+      if (window.webkitAudioContext) window.webkitAudioContext = Wrapped;
+      function resumeAll() {
+        ctxs.forEach(function (c) { if (c.state === 'suspended') { c.resume().catch(function () {}); } });
+      }
+      ['pointerdown', 'mousedown', 'touchstart', 'keydown'].forEach(function (ev) {
+        window.addEventListener(ev, resumeAll, { capture: true });
+      });
+    })();
+
+    const CORS_PROXIES = [
+      (u) => `https://lmk.one/api/cors?url=${encodeURIComponent(u)}`,
+      (u) => `https://corsproxy.io/?url=${encodeURIComponent(u)}`
+    ];
+
+    async function fetchWithCorsFallback(fileUrl, fileName) {
+      const isCrossOrigin = /^https?:\/\//i.test(fileUrl) && !fileUrl.startsWith(window.location.origin);
+      const candidates = isCrossOrigin
+        ? [fileUrl, ...CORS_PROXIES.map((fn) => fn(fileUrl))]
+        : [fileUrl];
+
+      let lastErr = null;
+      for (let i = 0; i < candidates.length; i++) {
+        const candidateUrl = candidates[i];
+        const viaProxy = i > 0;
+        try {
+          const resp = await fetch(candidateUrl, {
+            credentials: isCrossOrigin ? "omit" : "same-origin"
+          });
+          if (!resp.ok) {
+            throw new Error(`HTTP ${resp.status}`);
+          }
+          const bytes = new Uint8Array(await resp.arrayBuffer());
+          if (bytes.byteLength === 0) {
+            throw new Error("Pusty plik (0 bajtów)");
+          }
+          return bytes;
+        } catch (err) {
+          lastErr = err;
+          console.warn(`[SoundCraft] Próba pobrania (${viaProxy ? "proxy #" + i : "bezpośrednia"}) nie powiodła się:`, err);
+        }
+      }
+      throw lastErr || new Error("Nie udało się pobrać pliku z podanego adresu URL");
+    }
+
+    window.addEventListener("contextmenu", (e) => {
+      if (e.target && e.target.id === "soundcraft_canvas") e.preventDefault();
+    });
+
+    // Obsługa parametru ?file=... z automatyczną sekwencją pobierania i ładowania
+    (async () => {
+      const params = new URLSearchParams(window.location.search);
+      const fileUrl = params.get("file");
+      if (!fileUrl) return;
+
+      const cleanPath = fileUrl.split("?")[0].split("#")[0];
+      const fileName = decodeURIComponent(cleanPath.split("/").pop() || "session.scraftz");
+
+      const msg = document.getElementById("loading_msg");
+      const sub = document.getElementById("loading_sub");
+      if (msg) msg.textContent = `Pobieranie pliku: ${fileName}…`;
+      if (sub) sub.textContent = "Nawiązywanie połączenia…";
+
+      try {
+        const bytes = await fetchWithCorsFallback(fileUrl, fileName);
+        if (msg) msg.textContent = `Wczytywanie sesji: ${fileName}…`;
+        if (sub) sub.textContent = `${(bytes.byteLength / (1024 * 1024)).toFixed(2)} MB pobrane`;
+
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          const hasFn = typeof window.soundcraft_open_file === "function";
+          const canvas = document.getElementById("soundcraft_canvas");
+          const loadingGone = !document.getElementById("soundcraft_loading");
+
+          if (hasFn || (loadingGone && canvas)) {
+            clearInterval(interval);
+            try {
+              if (hasFn) {
+                window.soundcraft_open_file(fileName, bytes);
+              }
+              if (canvas && typeof DataTransfer !== "undefined") {
+                const dt = new DataTransfer();
+                const file = new File([bytes], fileName, { type: "application/octet-stream" });
+                dt.items.add(file);
+                canvas.dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true }));
+              }
+            } catch (openErr) {
+              console.warn("[SoundCraft] Błąd podczas otwierania pliku:", openErr);
+            }
+          } else if (attempts > 120) {
+            clearInterval(interval);
+          }
+        }, 150);
+      } catch (err) {
+        console.warn("[SoundCraft] Nie udało się wczytać pliku z ?file=:", err);
+      }
+    })();
+  </script>
+</body>
+</html>
